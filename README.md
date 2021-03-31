@@ -1,41 +1,74 @@
 <!----------------BEGIN-HEADER------------------------------------>
-## TestSNAP
+Instructions to build Kokkos OpenMPTarget backend with various compilers
+and then build TestSNAP with the said backend. 
 
-A proxy for the SNAP force calculation in the LAMMPS molecular dynamics package.
-When using this software please cite the original SNAP paper:
+## Clone Kokkos develop branch
 
-A. P. Thompson , L.P. Swiler, C.R. Trott, S.M. Foiles, and G.J. Tucker, "Spectral neighbor analysis method for automated generation of quantum-accurate interatomic potentials," J. Comp. Phys., 285 316 (2015).
+```
+git clone --single-branch --branch develop https://github.com/kokkos/kokkos.git 
+```
 
-_Copyright (2019) Sandia Corporation. Under the terms of Contract DE-AC04-94AL85000 with Sandia Corporation, the U.S. Government retains certain rights in this software. This software is distributed under the GNU General Public License_
-##
+## Build OpenMPTarget backend 
 
-#### Original author:
-    Aidan P. Thompson, athomps (at) sandia (dot) gov (Sandia National Labs)
-    http://www.cs.sandia.gov/~athomps
+### LLVM compiler
+```
+mkdir build_ompt_clang && cd build_ompt_clang
 
-#### Additional authors (alphabetical):
-    Rahul Gayatri (Lawrence Berkeley National Lab)
-    Stan Moore (Sandia National Labs)
-    Steve Plimpton (Sandia National Labs)
-    Christian Trott (Sandia National Labs)
+cmake -D CMAKE_INSTALL_PREFIX=$PWD/../install_ompt_clang/ \
+    -D CMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_STANDARD=17 \
+    -D CMAKE_CXX_FLAGS="-Wno-unknown-cuda-version -Werror -Wno-undefined-internal -Wno-pass-failed" \
+    -D Kokkos_ARCH_VOLTA70=ON -D Kokkos_ENABLE_OPENMPTARGET=ON -D Kokkos_ENABLE_SERIAL=ON \
+    ../ 
 
-## Build system
-### CMake
-The repo has a CMakeLists.txt in the root directory.
-It needs two parameters, 1) problem size(-Dref_data=2/8/14) and 2) kokkos installation (-DKokkos_ROOT=/path-to-kokkos-install)
-For example to build the benchmark problem size for an NVIDIA GPU using the Kokkos CUDA backend
+    make -j8
+    make install
+```
 
-    cd TestSNAP
-    mkdir build_cuda && cd build_cuda
-    cmake -Dref_data=14 -DKokkos_ROOT=/path-to-cuda-install ../
+### NVHPC compiler
 
-### Raw Makefile
-There is a basic Makefile provided in the src directory. 
-Makefile should be modified to point the KOKKOS_PATH to the Kokkos directory.
-Makefile needs two parameters too, 1) problem size(-Dref_data=2/8/14) and 2) the DEVICE type to determing the Kokkos backend
-For example to build the benchmark problem size for an NVIDIA GPU using the Kokkos CUDA backend
+```
+mkdir build_ompt_nvhpc && cd build_ompt_nvhpc
 
-    cd TestSNAP/src
-    make ref_data=14 DEVICE=cuda
+cmake -D CMAKE_INSTALL_PREFIX=$PWD/../install_ompt_nvhpc/ \
+    -D CMAKE_CXX_COMPILER=nvc++ -D CMAKE_CXX_STANDARD=17 \
+    -D Kokkos_ARCH_VOLTA70=ON -D Kokkos_ENABLE_OPENMPTARGET=ON -D Kokkos_ENABLE_SERIAL=ON \
+    ../ 
+
+    make -j8
+    make install
+```
+
+## Clone TestSNAP kokkos-nvhpc branch
+
+```
+git clone --single-branch --branch kokkos-nvhpc https://github.com/rgayatri23/TestSNAP.git
+```
+
+## Build TestSNAP with OpenMPTarget backend 
+
+### LLVM compiler
+```
+mkdir build_ompt_clang
+cmake -D CMAKE_BUILD_TYPE=Release -D CMAKE_CXX_COMPILER=clang++ \
+    -D Kokkos_DIR=$PATH-To-Kokkos-clang-install/lib64/cmake/Kokkos/ \
+    -D ref_data=14 ../
+
+    make 
+
+    ./test_snap
+```
+
+### NVHPC compiler
+
+```
+mkdir build_ompt_clang
+cmake -D CMAKE_BUILD_TYPE=Release -D CMAKE_CXX_COMPILER=nvc++ \
+    -D Kokkos_DIR=$PATH-To-Kokkos-nvhpc-install/lib64/cmake/Kokkos/ \
+    -D ref_data=14 ../
+
+    make 
+
+    ./test_snap
+```
 <!-----------------END-HEADER------------------------------------->
 
